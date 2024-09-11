@@ -1,0 +1,8 @@
+SAVES/*
+TotKSaves/*
+result/*
+diff.json
+*.sav
+*.pyc
+*.yaml
+*.txt
