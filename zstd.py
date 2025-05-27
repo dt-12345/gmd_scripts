@@ -14,7 +14,13 @@ except ImportError:
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List
+import enum
 import sys
+
+class DictType(enum.Enum):
+    ZSDIC = 1
+    BCETT = 2
+    PACK  = 3
 
 class ZstdDecompressor(zstd.ZstdDecompressor):
     def __init__(self, dictionary: zstd.ZstdCompressionDict=None, format: int=zstd.FORMAT_ZSTD1) -> None:
@@ -51,19 +57,23 @@ class ZstdDecompContext:
     def decompress(self, filepath: str) -> bytes:
         if not(filepath.endswith(".zs") or filepath.endswith(".zstd") or filepath.endswith(".mc")):
             return Path(filepath).read_bytes()
-        if filepath.endswith(".pack.zs"):
-            return self.pack._decompress(Path(filepath).read_bytes())
-        elif filepath.endswith(".bcett.byml.zs"):
-            return self.bcett._decompress(Path(filepath).read_bytes())
         elif filepath.endswith(".mc"):
             return self.mc._decompress(Path(filepath).read_bytes()[0xc:])
+        data: bytes = Path(filepath).read_bytes()
+        id: int = zstd.get_frame_parameters(data).dict_id
+        if id == 1:
+            return self.zs._decompress(data)
+        elif id == 2:
+            return self.bcett._decompress(data)
+        elif id == 3:
+            return self.pack._decompress(data)
         else:
-            return self.zs._decompress(Path(filepath).read_bytes())
+            return self.zs._decompress(data)
     
-    def compress(self, filepath: str) -> bytes:
-        if filepath.endswith(".pack.zs"):
+    def compress(self, filepath: str, dict: DictType = DictType.ZSDIC) -> bytes:
+        if dict == DictType.PACK:
             return self.pack_compress._compress(Path(filepath).read_bytes())
-        elif filepath.endswith(".bcett.byml.zs"):
+        elif dict == DictType.BCETT:
             return self.bcett_compress._compress(Path(filepath).read_bytes())
         else:
             return self.zs_compress._compress(Path(filepath).read_bytes())

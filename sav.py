@@ -861,5 +861,5 @@ if __name__ == "__main__":
 
     path_to_your_file = ""
 
-    file = Sav(Path(path_to_your_file).read_bytes)
+    file = Sav(Path(path_to_your_file).read_bytes())
     file.to_json("progress.json")
